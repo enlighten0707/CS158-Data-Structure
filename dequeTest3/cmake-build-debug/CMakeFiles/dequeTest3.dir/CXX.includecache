@@ -1,0 +1,44 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+C:/Users/86150/CLionProjects/dequeTest3/deque.h
+exceptions.h
+C:/Users/86150/CLionProjects/dequeTest3/exceptions.h
+cstddef
+-
+cmath
+-
+iostream
+-
+
+C:/Users/86150/CLionProjects/dequeTest3/exceptions.h
+cstddef
+-
+cstring
+-
+string
+-
+
+C:/Users/86150/CLionProjects/dequeTest3/main.cpp
+deque.h
+C:/Users/86150/CLionProjects/dequeTest3/deque.h
+ctime
+-
+iostream
+-
+deque
+-
+random
+-
+string
+-
+vector
+-
+ctime
+-
+
