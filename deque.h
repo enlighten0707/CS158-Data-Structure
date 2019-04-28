@@ -156,9 +156,25 @@ namespace sjtu {
             }
             // return th distance between two iterator,
             // if these two iterators points to different vectors, throw invaild_iterator.
+
             int operator-(const iterator &rhs) const {
-                //if(!isValid(rhs)) throw invalid_iterator();
+                if(!twoitrValid(rhs)) throw invalid_iterator();
                 return Distance()-rhs.Distance();
+            }
+
+            bool twoitrValid(const iterator &rhs)const{
+                mapIndex* p=curMap;
+                mapIndex* q=rhs.curMap;
+                while(p){
+                    if(p==q) return true;
+                    p=p->next;
+                }
+                p=curMap;
+                while(p){
+                    if(p==q) return true;
+                    p=p->pre;
+                }
+                return false;
             }
             iterator operator+=(const int &n) {
                 iterator cur=(*this)+n;
@@ -270,9 +286,194 @@ namespace sjtu {
                     throw invalid_iterator();
                 return *(curNode->Data);
             }
-            // And other methods in iterator.
-            // And other methods in iterator.
-            // And other methods in iterator.
+
+            bool isValid(const iterator &rhs){
+                mapIndex* p=curMap;
+                while(p){
+                    if(p==rhs.curMap) return true;
+                    p=p->next;
+                }
+                p=rhs.curMap;
+                while(p){
+                    if(p==curMap) return true;
+                    p=p->next;
+                }
+                return false;
+            }
+            int Distance()const{
+                node* a=curNode;
+                mapIndex* p=curMap;
+                int distance=0;
+                while(a!=p->DataHead){
+                    ++distance;
+                    a=a->pre;
+                }
+                p=p->pre;
+                while(p){
+                    distance+=p->curSize;
+                    p=p->pre;
+                }
+                return distance;
+            }
+
+            const_iterator operator+(const int &n) const {
+                int i=0;
+                mapIndex* tmpMap=curMap;
+                node* tmpNode=curNode;
+                const_iterator cur;
+                if(n==0){
+                    cur.curNode=curNode;
+                    cur.curMap=curMap;
+                    return cur;
+                }
+                if(n<0)  return *this-(-n);
+
+                if(curMap->next->next==NULL&&curNode->next->next==NULL){
+                    cur.curNode=tmpNode->next;
+                    cur.curMap=tmpMap;
+                    return cur;
+                }
+                while(i<n&&tmpNode->next!=curMap->DataTail){
+                    ++i;
+                    tmpNode=tmpNode->next;
+                }
+                if(i==n){
+                    cur.curMap=curMap;
+                    cur.curNode=tmpNode;
+                    return cur;
+                }
+
+                tmpMap=curMap->next;
+                while(i+(tmpMap->curSize)<n){
+                    i+=tmpMap->curSize;
+                    tmpMap=tmpMap->next;
+                    if(tmpMap->next==NULL) break;
+                }
+                if(tmpMap->next==NULL){
+                    tmpMap=tmpMap->pre;
+                    cur.curMap=tmpMap;
+                    cur.curNode=tmpMap->DataTail;
+                    return cur;
+                }
+                tmpNode=tmpMap->DataHead;
+                while(i<n){
+                    ++i;
+                    tmpNode=tmpNode->next;
+                }
+                cur.curMap=tmpMap;
+                cur.curNode=tmpNode;
+                return cur;
+            }
+            const_iterator operator-(const int &n) const {
+                mapIndex* tmpMap=curMap;
+                node* tmpNode=curNode;
+                const_iterator cur;
+                int i=0;
+                if(n==0){
+                    cur.curNode=curNode;
+                    cur.curMap=curMap;
+                    return cur;
+                }
+                if(n<0) return *this+(-n);
+                while(i<n&&tmpNode->pre!=curMap->DataHead){
+                    ++i;
+                    tmpNode=tmpNode->pre;
+                }
+                if(i==n){
+                    cur.curMap=curMap;
+                    cur.curNode=tmpNode;
+                    return cur;
+
+                }
+                tmpMap=curMap->pre;
+                while(i+tmpMap->curSize<n){
+                    i+=tmpMap->curSize;
+                    tmpMap=tmpMap->pre;
+                }
+                tmpNode=tmpMap->DataTail;
+                while(i<n){
+                    ++i;
+                    tmpNode=tmpNode->pre;
+                }
+                cur.curMap=tmpMap;
+                cur.curNode=tmpNode;
+                return cur;
+            }
+
+            int operator-(const const_iterator &rhs) const {
+                return Distance()-rhs.Distance();
+            }
+            const_iterator operator+=(const int &n) {
+                const_iterator cur=(*this)+n;
+                (*this)=cur;
+                return *this;
+            }
+            const_iterator operator-=(const int &n) {
+                const_iterator cur=*this-n;
+                *this=cur;
+                return *this;
+            }
+
+            const_iterator operator++(int) {
+                if(curMap->next->next==NULL&&curNode->next==NULL)
+                    throw invalid_iterator();
+                const_iterator old=*this;
+                const_iterator cur=*this+1;
+                *this=cur;
+                return old;
+            }
+
+            const_iterator& operator++() {
+                if(curMap->next->next==NULL&&curNode->next==NULL)
+                    throw invalid_iterator();
+                const_iterator cur=(*this)+1;
+                (*this)=cur;
+                return *this;
+            }
+
+            const_iterator operator--(int) {
+                if(curMap->pre->pre==NULL&&curNode->pre->pre==NULL)
+                    throw invalid_iterator();
+                const_iterator old=*this;
+                const_iterator cur=*this-1;
+                *this=cur;
+                return old;
+            }
+
+            const_iterator& operator--() {
+                if(curMap->pre->pre==NULL&&curNode->pre->pre==NULL)
+                    throw invalid_iterator();
+                const_iterator cur=*this-1;
+                *this=cur;
+                return *this;
+            }
+
+            T* operator->() const noexcept {
+                T* p=curNode->Data;
+                return p;
+            }
+
+            bool operator==(const iterator &rhs) const {
+                if(curNode==rhs.curNode)
+                    return true;
+                return false;
+            }
+            bool operator==(const const_iterator &rhs) const {
+                if(curNode==rhs.curNode)
+                    return true;
+                return false;
+            }
+
+            bool operator!=(const iterator &rhs) const {
+                if(curNode==rhs.curNode)
+                    return false;
+                return true;
+            }
+            bool operator!=(const const_iterator &rhs) const {
+                if(curNode==rhs.curNode)
+                    return false;
+                return true;
+            }
         };
 
         deque() {
