@@ -865,8 +865,8 @@ namespace sjtu {
                 curMap=q;
                 return;
             }
-            if(curMap->curSize==sqrt(sumSize)) return;
-            else if(curMap->curSize>sqrt(sumSize)){
+            if(curMap->curSize<1000) return;
+            else {
                 int newSize=(curMap->curSize)/2;
                 //split
                 node *a=curMap->DataHead,*b,*c;
