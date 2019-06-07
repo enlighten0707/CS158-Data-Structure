@@ -67,20 +67,20 @@ namespace sjtu {
         }
 
         void write(void *place, int offset){
-            openFile();
+            //openFile();
             //std::rewind(fp);
             std::fseek(fp,offset,SEEK_SET);
             std::fwrite(place,4096,1,fp);
             std::fflush(fp);
 
-            closeFile();
+            //closeFile();
         }
 
         void read(void* place, int offset) {
-            openFile();
+            //openFile();
             std::fseek(fp, offset, SEEK_SET);
             std::fread(place,4096,1, fp);
-            closeFile();
+            //closeFile();
         }
 
 
@@ -203,14 +203,14 @@ namespace sjtu {
         }
 
         ~BTree() {
-            openFile("wb+");
-            closeFile();
+            //openFile("wb+");
+            //closeFile();
             core.root = 0;
             core.slot = 0;
             core.pos = UNIT;
             core._size = 0;
             core.height = 0;
-            openFile();
+            //openFile();
             TreeNode rt;
             alloc();
             alloc();
@@ -222,6 +222,7 @@ namespace sjtu {
             write(&ln, rt.index[0].second);
             core.height = 2;
             write(&core, core.pos);
+            closeFile();
         }
 
 
