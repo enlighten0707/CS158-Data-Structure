@@ -7,6 +7,8 @@
 #include <cstring>
 #include <unistd.h>
 
+//#define DEBUG
+
 namespace sjtu {
     static const char WRITE_PATH[256] = "C:\\Users\\86150\\Desktop\\records.txt";
     //static const int UNIT = 4096;
@@ -312,44 +314,69 @@ namespace sjtu {
             else if(ln.succ!=0){//后面有一个兄弟
                 LeafNode brother;
                 read(&brother,ln.succ);
-                if(brother.size!=L){
-                    //如果兄弟没有满，就将一个孩子给兄弟寄养
+                if(brother.parent==ln.parent) {
+                    if (brother.size != L) {
+                        //如果兄弟没有满，就将一个孩子给兄弟寄养
+#ifdef DEBUG
+                        std::cout << key << " give brother a child" << std::endl;
+#endif
 
-                    //std::cout<<key<<" give brother a child"<<std::endl;
-
-                    for(int i=brother.size;i>0;--i)
-                        brother.record[i]=brother.record[i-1];
-                    if(comp(ln.record[ln.size-1].first,key)){
-                        //节点正好放在兄弟的末尾，大小夹在两个record之间
-                        brother.record[0].first=key;
-                        brother.record[0].second=value;
-                        ++brother.size;
-                    }
-                    else{
-                        //需要移动，放到前一个结点内部
-                        brother.record[0]=ln.record[ln.size-1];
-                        ++brother.size;
-                        int i;
-                        for(i=ln.size-1;i>0;--i){
-                            if(comp(ln.record[i-1].first,key))break;
-                            ln.record[i]=ln.record[i-1];
+                        for (int i = brother.size; i > 0; --i)
+                            brother.record[i] = brother.record[i - 1];
+                        if (comp(ln.record[ln.size - 1].first, key)) {
+                            //节点正好放在兄弟的末尾，大小夹在两个record之间
+                            brother.record[0].first = key;
+                            brother.record[0].second = value;
+                            ++brother.size;
+                        } else {
+                            //需要移动，放到前一个结点内部
+                            brother.record[0] = ln.record[ln.size - 1];
+                            ++brother.size;
+                            int i;
+                            for (i = ln.size - 1; i > 0; --i) {
+                                if (comp(ln.record[i - 1].first, key))break;
+                                ln.record[i] = ln.record[i - 1];
+                            }
+                            ln.record[i].first = key;
+                            ln.record[i].second = value;
+                            upDateIndex(ln.parent, brother.record[0].first, ln.record[ln.size - 1].first);
                         }
-                        ln.record[i].first=key;
-                        ln.record[i].second=value;
-                        upDateIndex(ln.parent,brother.record[0].first,ln.record[ln.size-1].first);
-                    }
-                    ++core._size;
-                    write(&core,core.pos);
-                    write(&ln,curPos);
-                    write(&brother,ln.succ);
+                        ++core._size;
+                        write(&core, core.pos);
+                        write(&ln, curPos);
+                        write(&brother, ln.succ);
+#ifdef DEBUG
+                        debugFind(key);
+#endif
+                    } else {
+                        //兄弟也满了，这时需要新加入一个叶子节点，进行分裂，并向上检查更新
+#ifdef DEBUG
+                        std::cout << key << " split a node" << std::endl;
+#endif
+                        LeafNode newNode;
+                        createLeafNode(ln, newNode);
+                        int i = L / 2, j = 0;
+                        for (; i < L; ++i, ++j) {
+                            newNode.record[j] = ln.record[i];
+                            ++newNode.size;
+                            --ln.size;
+                        }
 
-                    //debugFind(key);
+                        write(&ln, ln.self);
+                        write(&newNode, newNode.self);
+                        upDateIndex(ln.parent, newNode.record[newNode.size - 1].first, ln.record[ln.size - 1].first);
+                        insertIndex(ln.parent, newNode.record[newNode.size - 1].first, newNode.self, true);
+                        insert(key, value);
+#ifdef DEBUG
+                        debugFind(key);
+#endif
+                    }
                 }
                 else{
-                    //兄弟也满了，这时需要新加入一个叶子节点，进行分裂，并向上检查更新
-
-                    //std::cout<<key<<" split a node"<<std::endl;
-
+                    //后面没有兄弟，不能往后读取，新插入索引，方法与上一种类似
+#ifdef DEBUG
+                    std::cout<<key<<" a new brother"<<std::endl;
+#endif
                     LeafNode newNode;
                     createLeafNode(ln, newNode);
                     int i=L/2,j=0;
@@ -364,14 +391,17 @@ namespace sjtu {
                     upDateIndex(ln.parent,newNode.record[newNode.size-1].first,ln.record[ln.size-1].first);
                     insertIndex(ln.parent,newNode.record[newNode.size-1].first,newNode.self,true);
                     insert(key,value);
-                    //debugFind(key);
+#ifdef DEBUG
+                    debugFind(key);
+#endif
                 }
+
             }
             else{
                 //后面没有兄弟，不能往后读取，新插入索引，方法与上一种类似
-
-                //std::cout<<key<<" a new brother"<<std::endl;
-
+#ifdef DEBUG
+                std::cout<<key<<" a new brother"<<std::endl;
+#endif
                 LeafNode newNode;
                 createLeafNode(ln, newNode);
                 int i=L/2,j=0;
@@ -386,8 +416,9 @@ namespace sjtu {
                 upDateIndex(ln.parent,newNode.record[newNode.size-1].first,ln.record[ln.size-1].first);
                 insertIndex(ln.parent,newNode.record[newNode.size-1].first,newNode.self,true);
                 insert(key,value);
-
-                //debugFind(key);
+#ifdef DEBUG
+                debugFind(key);
+#endif
             }
         }
 
@@ -417,57 +448,87 @@ namespace sjtu {
                 write(&tn,offset);
             }
             else if(tn.succ!=0){//后面有一个邻居
-
-
                 TreeNode sib;
                 read(&sib,tn.succ);
-                if(tn.size!=M){
+                if(sib.parent==tn.parent) {
+                    if (tn.size != M) {
+#ifdef DEBUG
+                        std::cout << key << " index**give sib a child" << std::endl;
+#endif
+                        //邻居没有满，可以寄养一个给邻居
+                        if (comp(tn.index[tn.size - 1].first, key)) {
+                            //新的孩子需要寄养在邻居那里
+                            for (int i = sib.size; i > 0; --i)
+                                sib.index[i] = sib.index[i - 1];
+                            sib.index[0].first = key;
+                            sib.index[0].second = child;
+                            ++sib.size;
+                            write(&sib, sib.self);
+                            upDateParent(sib.self, child, mode);
+                        } else {
+                            //从节点末尾移动一个孩子给邻居
+                            for (int i = sib.size; i > 0; --i)
+                                sib.index[i] = sib.index[i - 1];
+                            sib.index[0] = tn.index[tn.size - 1];
+                            upDateParent(sib.self, sib.index[0].second, mode);
+                            ++sib.size;
+                            --tn.size;
+                            write(&tn, tn.self);
+                            write(&sib, sib.self);
+                            int i;
+                            for (i = tn.size - 1; i > 0; --i) {
+                                if (comp(tn.index[i - 1].first, key))break;
+                                tn.index[i] = tn.index[i - 1];
+                            }
+                            //Key oldKey = tn.index[i].first;
+                            tn.index[i].first = key;
+                            tn.index[i].second = child;
+                            ++tn.size;
+                            write(&tn, tn.self);
+                            if (i == tn.size - 1)
+                                upDateIndex(tn.parent, sib.index[0].first, key);
+                            else upDateIndex(tn.parent, sib.index[0].first, tn.index[tn.size - 1].first);
 
-                    //std::cout<<key<<" index**give sib a child"<<std::endl;
-
-                    //邻居没有满，可以寄养一个给邻居
-                    if(comp(tn.index[tn.size-1].first,key)){
-                        //新的孩子需要寄养在邻居那里
-                        for (int i = sib.size; i > 0; --i)
-                            sib.index[i] = sib.index[i - 1];
-                        sib.index[0].first=key;
-                        sib.index[0].second=child;
-                        ++sib.size;
-                        write(&sib,sib.self);
-                        upDateParent(sib.self,child,mode);
-                    }
-                    else {
-                        //从节点末尾移动一个孩子给邻居
-                        for (int i = sib.size; i > 0; --i)
-                            sib.index[i] = sib.index[i - 1];
-                        sib.index[0] = tn.index[tn.size - 1];
-                        upDateParent(sib.self, sib.index[0].second, mode);
-                        ++sib.size;
-                        --tn.size;
-                        write(&tn, tn.self);
-                        write(&sib, sib.self);
-                        int i;
-                        for (i = tn.size - 1; i > 0; --i) {
-                            if (comp(tn.index[i - 1].first, key))break;
-                            tn.index[i] = tn.index[i - 1];
                         }
-                        //Key oldKey = tn.index[i].first;
-                        tn.index[i].first = key;
-                        tn.index[i].second = child;
-                        ++tn.size;
-                        write(&tn, tn.self);
-                        if (i == tn.size - 1)
-                            upDateIndex(tn.parent, sib.index[0].first, key);
-                        else upDateIndex(tn.parent,sib.index[0].first,tn.index[tn.size-1].first);
+#ifdef  DEBUG
+                        debugFind(key);
+#endif
+                    } else {
+                        //邻居满了，这时需要预处理，分裂当前节点
+#ifdef  DEBUG
+                        std::cout << key << " index**split new node" << std::endl;
 
+#endif
+                        TreeNode newNode;
+                        createTreeNode(tn, newNode);
+                        Key oldKey = tn.index[tn.size - 1].first;
+                        int i = M / 2, j = 0;
+                        for (; i < M; ++i, ++j) {
+                            newNode.index[j] = tn.index[i];
+                            ++newNode.size;
+                            --tn.size;
+                            upDateParent(newNode.self, newNode.index[j].second, mode);
+                        }
+
+                        write(&tn, tn.self);
+                        write(&newNode, newNode.self);
+                        upDateIndex(tn.parent, oldKey, tn.index[tn.size - 1].first);
+                        insertIndex(tn.parent, oldKey, newNode.self, false);
+
+                        if (comp(key, tn.index[tn.size - 1].first))
+                            insertIndex(tn.self, key, child, mode);
+                        else
+                            insertIndex(newNode.self, key, child, mode);
+#ifdef DEBUG
+                        debugFind(key);
+#endif
                     }
-                    //debugFind(key);
                 }
                 else{
-                    //邻居满了，这时需要预处理，分裂当前节点
-
-                    //std::cout<<key<<" index**split new node"<<std::endl;
-
+                    //后面没有邻居,同样需要分裂
+#ifdef  DEBUG
+                    std::cout<<key<<" index**a new sib"<<std::endl;
+#endif
                     TreeNode newNode;
                     createTreeNode(tn, newNode);
                     Key oldKey=tn.index[tn.size-1].first;
@@ -479,23 +540,49 @@ namespace sjtu {
                         upDateParent(newNode.self,newNode.index[j].second,mode);
                     }
 
-                    write(&tn,tn.self);
-                    write(&newNode,newNode.self);
-                    upDateIndex(tn.parent,oldKey,tn.index[tn.size-1].first);
-                    insertIndex(tn.parent,oldKey,newNode.self,false);
-
-                    if(comp(key,tn.index[tn.size-1].first))
-                        insertIndex(tn.self,key,child,mode);
-                    else
-                        insertIndex(newNode.self,key,child,mode);
-                    //debugFind(key);
+                    if(tn.parent!=0){
+                        //操作非根节点
+                        write(&tn,tn.self);
+                        write(&newNode,newNode.self);
+                        upDateIndex(tn.parent,oldKey,tn.index[tn.size-1].first);
+                        insertIndex(tn.parent,oldKey,newNode.self,false);
+                        if(comp(key,tn.index[tn.size-1].first))
+                            insertIndex(tn.self,key,child,mode);
+                        else
+                            insertIndex(newNode.self,key,child,mode);
+                    }
+                    else{
+                        //是根节点，目前根节点被一分为二，需要找到新的根节点
+                        TreeNode newRoot;
+                        int rootPos=alloc();
+                        newRoot.parent=newRoot.succ=0;
+                        newRoot.size=2;
+                        newRoot.index[0].first=tn.index[tn.size-1].first;
+                        newRoot.index[0].second=tn.self;
+                        tn.parent=rootPos;
+                        newRoot.index[1].first=newNode.index[newNode.size-1].first;
+                        newRoot.index[1].second=newNode.self;
+                        newNode.parent=rootPos;
+                        core.height++;
+                        core.root=rootPos;
+                        write(&newRoot,rootPos);
+                        write(&tn,tn.self);
+                        write(&newNode,newNode.self);
+                        if(comp(key,tn.index[tn.size-1].first))
+                            insertIndex(tn.self,key,child,mode);
+                        else
+                            insertIndex(newNode.self,key,child,mode);
+                    }
+#ifdef DEBUG
+                    debugFind(key);
+#endif
                 }
             }
             else{
                 //后面没有邻居,同样需要分裂
-
-                //std::cout<<key<<" index**a new sib"<<std::endl;
-
+#ifdef  DEBUG
+                std::cout<<key<<" index**a new sib"<<std::endl;
+#endif
                 TreeNode newNode;
                 createTreeNode(tn, newNode);
                 Key oldKey=tn.index[tn.size-1].first;
@@ -540,7 +627,9 @@ namespace sjtu {
                     else
                         insertIndex(newNode.self,key,child,mode);
                 }
-                //debugFind(key);
+#ifdef DEBUG
+                debugFind(key);
+#endif
             }
 
         }
@@ -647,28 +736,11 @@ namespace sjtu {
             if(j==tn.size) --j;
             std::cout<<"j="<<j<<std::endl;
             next=tn.index[j].second;
-//            LeafNode ln;
-//            read(&ln,next);
-            //std::cout<<"LeafNode size:"<<ln.size<<std::endl;
-            //for(int i=0;i<ln.size;++i)
-                //std::cout<<ln.record[i].first<<' ';
-            //std::cout<<ln.record[0].first<<' '<<ln.record[ln.size-1].first;
-            //std::cout<<std::endl;
-//            int tmp=ln.succ;
-//            while(tmp!=0){
-//                read(&ln,tmp);
-//                std::cout<<"LeafNode size:"<<ln.size<<std::endl;
-//                for(int i=0;i<ln.size;++i)
-//                    std::cout<<ln.record[i].first<<' ';
-//
-//                //std::cout<<ln.record[0].first<<' '<<ln.record[ln.size-1].first;
-//                tmp=ln.succ;
-//                std::cout<<std::endl;
-//            }
+
             for(int i=0;i<tn.size;++i){
                 LeafNode ln;
                 read(&ln,tn.index[i].second);
-                std::cout<<"TreeNode"<<i<<" size: "<<ln.size<<std::endl;
+                std::cout<<"LeafNode"<<i<<" size: "<<ln.size<<std::endl;
                 for(int k=0;k<ln.size;++k)
                     std::cout<<ln.record[k].first<<' ';
                 std::cout<<std::endl;
