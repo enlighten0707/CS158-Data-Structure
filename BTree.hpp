@@ -10,7 +10,7 @@
 //#define DEBUG
 
 namespace sjtu {
-    static const char WRITE_PATH[256] = "C:\\Users\\86150\\Desktop\\records.txt";
+    static const char WRITE_PATH[256] = "records.txt";
     //static const int UNIT = 4096;
     static const int UNIT = 4096;
 
@@ -27,17 +27,17 @@ namespace sjtu {
 //        static const size_t L = 50;
 
         struct TreeNode{
-            int parent=0;
-            int self=0;
-            int succ=0;
+            long parent=0;
+            long self=0;
+            long succ=0;
             size_t size=0;
             Index index[M];
         };
 
         struct LeafNode{
-            int parent=0;
-            int self=0;
-            int succ=0;
+            long parent=0;
+            long self=0;
+            long succ=0;
             size_t size=0;
             Record record[L];
         };
@@ -47,9 +47,9 @@ namespace sjtu {
         mutable int fileLevel = 0;
 
         struct CoreData{
-            int root = 0, slot = 0, pos = UNIT;
+            long root = 0, slot = 0, pos = UNIT;
             size_t _size = 0;
-            int height = 0;
+            long height = 0;
         };
 
         CoreData core;
@@ -69,7 +69,7 @@ namespace sjtu {
             //std::cout<<"close success\n";
         }
 
-        void write(void *place, int offset){
+        void write(void *place, long offset){
             //openFile();
             //std::rewind(fp);
             std::fseek(fp,offset,SEEK_SET);
@@ -79,7 +79,7 @@ namespace sjtu {
             //closeFile();
         }
 
-        void read(void* place, int offset) {
+        void read(void* place, long offset) {
             //openFile();
             std::fseek(fp, offset, SEEK_SET);
             std::fread(place,UNIT,1, fp);
@@ -87,10 +87,10 @@ namespace sjtu {
         }
 
 
-        int alloc(){
+        long alloc(){
             //std::cout<<"#alloc:";
-            int s = core.slot;
-            core.slot += UNIT;
+            long s = core.slot;
+            core.slot += (long)UNIT;
             write(&core, core.pos);
             //std::cout<<s<<' '<<core.slot<<' '<<core.pos<<std::endl;
             return s;
@@ -233,13 +233,13 @@ namespace sjtu {
         // Return a pair, the first of the pair is the iterator point to the new
         // element, the second of the pair is Success if it is successfully inserted
 
-        int Find(const Key& key){
+        long Find(const Key& key){
             //找到插入key的叶结点的位置，如果插入的是最大或最小的key应当归并在中间
             //std::cout<<"Find Key:\n";
             TreeNode tn;
             read(&tn,core.root);
 
-            int next,parent=core.root;
+            long next,parent=core.root;
             if(core._size==0)
                 return tn.index[0].second;
 
@@ -274,7 +274,7 @@ namespace sjtu {
         }
 
         void insert(const Key& key, const Value& value){
-            int curPos=Find(key);
+            long curPos=Find(key);
 
             //std::cout<<curPos<<std::endl;
 
@@ -295,7 +295,7 @@ namespace sjtu {
                     write(&ln,curPos);
                 }
                 else{
-                    int i;
+                    long i;
                     for(i=ln.size;i>0;--i){
                         if(comp(ln.record[i-1].first,key))break;
                         ln.record[i]=ln.record[i-1];
@@ -333,7 +333,7 @@ namespace sjtu {
                             brother.record[0] = ln.record[ln.size - 1];
                             ++brother.size;
                             int i;
-                            for (i = ln.size - 1; i > 0; --i) {
+                            for (i = ln.size -1 ; i > 0; --i) {
                                 if (comp(ln.record[i - 1].first, key))break;
                                 ln.record[i] = ln.record[i - 1];
                             }
@@ -442,7 +442,7 @@ namespace sjtu {
                 tn.index[i].second=child;
                 upDateParent(offset,child,mode);
 
-                if(i==tn.size-1)
+                if(i==tn.size)
                     upDateIndex(tn.parent,oldKey,key);
                 ++tn.size;
                 write(&tn,offset);
@@ -476,19 +476,17 @@ namespace sjtu {
                             write(&tn, tn.self);
                             write(&sib, sib.self);
                             int i;
-                            for (i = tn.size - 1; i > 0; --i) {
+                            for (i = tn.size ; i > 0; --i) {
                                 if (comp(tn.index[i - 1].first, key))break;
                                 tn.index[i] = tn.index[i - 1];
                             }
                             //Key oldKey = tn.index[i].first;
                             tn.index[i].first = key;
                             tn.index[i].second = child;
+                            upDateParent(tn.self,child,mode);
                             ++tn.size;
                             write(&tn, tn.self);
-                            if (i == tn.size - 1)
-                                upDateIndex(tn.parent, sib.index[0].first, key);
-                            else upDateIndex(tn.parent, sib.index[0].first, tn.index[tn.size - 1].first);
-
+                            upDateIndex(tn.parent, sib.index[0].first, tn.index[tn.size - 1].first);
                         }
 #ifdef  DEBUG
                         debugFind(key);
@@ -515,10 +513,16 @@ namespace sjtu {
                         upDateIndex(tn.parent, oldKey, tn.index[tn.size - 1].first);
                         insertIndex(tn.parent, oldKey, newNode.self, false);
 
-                        if (comp(key, tn.index[tn.size - 1].first))
+                        if (comp(key, tn.index[tn.size - 1].first)){
                             insertIndex(tn.self, key, child, mode);
-                        else
+                            upDateParent(tn.self,child,mode);
+                        }
+
+                        else{
                             insertIndex(newNode.self, key, child, mode);
+                            upDateParent(newNode.self,child,mode);
+                        }
+
 #ifdef DEBUG
                         debugFind(key);
 #endif
@@ -546,10 +550,16 @@ namespace sjtu {
                         write(&newNode,newNode.self);
                         upDateIndex(tn.parent,oldKey,tn.index[tn.size-1].first);
                         insertIndex(tn.parent,oldKey,newNode.self,false);
-                        if(comp(key,tn.index[tn.size-1].first))
+                        if(comp(key,tn.index[tn.size-1].first)){
                             insertIndex(tn.self,key,child,mode);
-                        else
+                            upDateParent(tn.self,child,mode);
+                        }
+
+                        else{
                             insertIndex(newNode.self,key,child,mode);
+                            upDateParent(newNode.self,child,mode);
+                        }
+
                     }
                     else{
                         //是根节点，目前根节点被一分为二，需要找到新的根节点
@@ -568,10 +578,16 @@ namespace sjtu {
                         write(&newRoot,rootPos);
                         write(&tn,tn.self);
                         write(&newNode,newNode.self);
-                        if(comp(key,tn.index[tn.size-1].first))
+                        if(comp(key,tn.index[tn.size-1].first)){
                             insertIndex(tn.self,key,child,mode);
-                        else
+                            upDateParent(tn.self,child,mode);
+                        }
+
+                        else{
                             insertIndex(newNode.self,key,child,mode);
+                            upDateParent(newNode.self,child,mode);
+                        }
+
                     }
 #ifdef DEBUG
                     debugFind(key);
@@ -600,10 +616,16 @@ namespace sjtu {
                      write(&newNode,newNode.self);
                      upDateIndex(tn.parent,oldKey,tn.index[tn.size-1].first);
                      insertIndex(tn.parent,oldKey,newNode.self,false);
-                     if(comp(key,tn.index[tn.size-1].first))
+                     if(comp(key,tn.index[tn.size-1].first)){
                          insertIndex(tn.self,key,child,mode);
-                     else
+                         upDateParent(tn.self,child,mode);
+                     }
+
+                     else{
                          insertIndex(newNode.self,key,child,mode);
+                         upDateParent(newNode.self,child,mode);
+                     }
+
                 }
                 else{
                     //是根节点，目前根节点被一分为二，需要找到新的根节点
@@ -622,10 +644,16 @@ namespace sjtu {
                     write(&newRoot,rootPos);
                     write(&tn,tn.self);
                     write(&newNode,newNode.self);
-                    if(comp(key,tn.index[tn.size-1].first))
+                    if(comp(key,tn.index[tn.size-1].first)){
                         insertIndex(tn.self,key,child,mode);
-                    else
+                        upDateParent(tn.self,child,mode);
+                    }
+
+                    else{
                         insertIndex(newNode.self,key,child,mode);
+                        upDateParent(newNode.self,child,mode);
+                    }
+
                 }
 #ifdef DEBUG
                 debugFind(key);
@@ -633,7 +661,7 @@ namespace sjtu {
             }
 
         }
-        void upDateParent(int newParent,int offset,bool mode){
+        void upDateParent(long newParent,long offset,bool mode){
             //将孩子节点的父亲节点更新
             if(mode){
                 LeafNode ln;
@@ -694,31 +722,19 @@ namespace sjtu {
             }
         }
 
-        int debugFind(const Key& key){
+        /*void debugFind(){
             //用于调试
-            std::cout<<"key:"<<key<<std::endl;
             std::cout<<"height:"<<core.height<<std::endl;
             TreeNode tn;
             read(&tn,core.root);
 
             int next;
-            if(core._size==0){
-                std::cout<<tn.index[0].second;
-                return tn.index[0].second;
-            }
 
             for(int i=0;i<core.height-2;++i){
                 std::cout<<"TreeNode size:"<<tn.size<<std::endl;
                 for(int k=0;k<tn.size;++k)
                     std::cout<<tn.index[k].first<<' ';
                 std::cout<<std::endl;
-                int j=0;
-                while(j<tn.size&&comp(tn.index[j].first,key)) {
-                    ++j;
-                }
-
-                if(j==tn.size) --j;
-                std::cout<<"j="<<j<<std::endl;
                 next=tn.index[j].second;
                 read(&tn,next);
             }
@@ -743,10 +759,11 @@ namespace sjtu {
                 std::cout<<"LeafNode"<<i<<" size: "<<ln.size<<std::endl;
                 for(int k=0;k<ln.size;++k)
                     std::cout<<ln.record[k].first<<' ';
+                //std::cout<<ln.record[0].first<<' '<<ln.record[ln.size-1].first;
                 std::cout<<std::endl;
             }
             return next;
-        }
+        }*/
 
     };
 }  // namespace sjtu
