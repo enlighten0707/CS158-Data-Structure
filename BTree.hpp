@@ -9,6 +9,7 @@
 
 namespace sjtu {
     static const char WRITE_PATH[256] = "C:\\Users\\86150\\Desktop\\records.txt";
+    //static const int UNIT = 4096;
     static const int UNIT = 4096;
 
     template <class Key, class Value, class Compare = std::less<Key> >
@@ -17,8 +18,8 @@ namespace sjtu {
         typedef std::pair<Key,int> Index;
         typedef std::pair<Key,Value> Record;
 
-        static const size_t M = (4096 - 3 * sizeof(int) - sizeof(size_t)) / (sizeof(Index));
-        static const size_t L = (4096 - 3 * sizeof(int) - sizeof(size_t)) / (sizeof(Record));
+        static const size_t M = (UNIT - 3 * sizeof(int) - sizeof(size_t)) / (sizeof(Index));
+        static const size_t L = (UNIT - 3 * sizeof(int) - sizeof(size_t)) / (sizeof(Record));
 
 //        static const size_t M = 30;
 //        static const size_t L = 50;
@@ -70,7 +71,7 @@ namespace sjtu {
             //openFile();
             //std::rewind(fp);
             std::fseek(fp,offset,SEEK_SET);
-            std::fwrite(place,4096,1,fp);
+            std::fwrite(place,UNIT,1,fp);
             std::fflush(fp);
 
             //closeFile();
@@ -79,7 +80,7 @@ namespace sjtu {
         void read(void* place, int offset) {
             //openFile();
             std::fseek(fp, offset, SEEK_SET);
-            std::fread(place,4096,1, fp);
+            std::fread(place,UNIT,1, fp);
             //closeFile();
         }
 
@@ -346,15 +347,18 @@ namespace sjtu {
                 }
                 else{
                     //兄弟也满了，这时需要新加入一个叶子节点，进行分裂，并向上检查更新
+
                     //std::cout<<key<<" split a node"<<std::endl;
 
                     LeafNode newNode;
                     createLeafNode(ln, newNode);
                     int i=L/2,j=0;
-                    for(;i<L;++i,++j)
+                    for(;i<L;++i,++j){
                         newNode.record[j]=ln.record[i];
-                    newNode.size+=L/2;
-                    ln.size-=L/2;
+                        ++newNode.size;
+                        --ln.size;
+                    }
+
                     write(&ln,ln.self);
                     write(&newNode,newNode.self);
                     upDateIndex(ln.parent,newNode.record[newNode.size-1].first,ln.record[ln.size-1].first);
@@ -365,15 +369,18 @@ namespace sjtu {
             }
             else{
                 //后面没有兄弟，不能往后读取，新插入索引，方法与上一种类似
+
                 //std::cout<<key<<" a new brother"<<std::endl;
 
                 LeafNode newNode;
                 createLeafNode(ln, newNode);
                 int i=L/2,j=0;
-                for(;i<L;++i,++j)
+                for(;i<L;++i,++j){
                     newNode.record[j]=ln.record[i];
-                newNode.size+=L/2;
-                ln.size-=L/2;
+                    ++newNode.size;
+                    --ln.size;
+                }
+
                 write(&ln,ln.self);
                 write(&newNode,newNode.self);
                 upDateIndex(ln.parent,newNode.record[newNode.size-1].first,ln.record[ln.size-1].first);
@@ -415,7 +422,9 @@ namespace sjtu {
                 TreeNode sib;
                 read(&sib,tn.succ);
                 if(tn.size!=M){
+
                     //std::cout<<key<<" index**give sib a child"<<std::endl;
+
                     //邻居没有满，可以寄养一个给邻居
                     if(comp(tn.index[tn.size-1].first,key)){
                         //新的孩子需要寄养在邻居那里
@@ -456,6 +465,7 @@ namespace sjtu {
                 }
                 else{
                     //邻居满了，这时需要预处理，分裂当前节点
+
                     //std::cout<<key<<" index**split new node"<<std::endl;
 
                     TreeNode newNode;
@@ -464,10 +474,11 @@ namespace sjtu {
                     int i=M/2,j=0;
                     for(;i<M;++i,++j){
                         newNode.index[j]=tn.index[i];
+                        ++newNode.size;
+                        --tn.size;
                         upDateParent(newNode.self,newNode.index[j].second,mode);
                     }
-                    newNode.size+=M/2;
-                    tn.size-=M/2;
+
                     write(&tn,tn.self);
                     write(&newNode,newNode.self);
                     upDateIndex(tn.parent,oldKey,tn.index[tn.size-1].first);
@@ -482,6 +493,7 @@ namespace sjtu {
             }
             else{
                 //后面没有邻居,同样需要分裂
+
                 //std::cout<<key<<" index**a new sib"<<std::endl;
 
                 TreeNode newNode;
@@ -490,10 +502,10 @@ namespace sjtu {
                 int i=M/2,j=0;
                 for(;i<M;++i,++j){
                     newNode.index[j]=tn.index[i];
+                    ++newNode.size;
+                    --tn.size;
                     upDateParent(newNode.self,newNode.index[j].second,mode);
                 }
-                newNode.size+=M/2;
-                tn.size-=M/2;
 
                 if(tn.parent!=0){
                     //操作非根节点
@@ -608,40 +620,57 @@ namespace sjtu {
 
             for(int i=0;i<core.height-2;++i){
                 std::cout<<"TreeNode size:"<<tn.size<<std::endl;
+                for(int k=0;k<tn.size;++k)
+                    std::cout<<tn.index[k].first<<' ';
+                std::cout<<std::endl;
                 int j=0;
                 while(j<tn.size&&comp(tn.index[j].first,key)) {
                     ++j;
-                    std::cout<<tn.index[j].first<<' ';
                 }
 
                 if(j==tn.size) --j;
-                std::cout<<std::endl<<"j="<<j<<std::endl;
+                std::cout<<"j="<<j<<std::endl;
                 next=tn.index[j].second;
                 read(&tn,next);
             }
+            if(core.height==2){
+                std::cout<<"TreeNode size:"<<tn.size<<std::endl;
+                for(int k=0;k<tn.size;++k)
+                    std::cout<<tn.index[k].first<<' ';
+                std::cout<<std::endl;
+            }
 
             int j=0;
-            std::cout<<"TreeNode size:"<<tn.size<<std::endl;
-            for(int i=0;i<tn.size;++i)
-                std::cout<<tn.index[i].first<<' ';
             while(j<tn.size&&comp(tn.index[j].first,key)) {
                 ++j;
             }
             if(j==tn.size) --j;
-            std::cout<<std::endl<<"j="<<j<<std::endl;
+            std::cout<<"j="<<j<<std::endl;
             next=tn.index[j].second;
-            LeafNode ln;
-            read(&ln,next);
-            std::cout<<"LeafNode size:"<<ln.size<<std::endl;
-            for(int i=0;i<ln.size;++i)
-                std::cout<<ln.record[i].first<<' ';
-            std::cout<<std::endl;
-            long tmp=ln.succ;
-            while(tmp!=0){
-                read(&ln,tmp);
-                for(int i=0;i<ln.size;++i)
-                    std::cout<<ln.record[i].first<<' ';
-                tmp=ln.succ;
+//            LeafNode ln;
+//            read(&ln,next);
+            //std::cout<<"LeafNode size:"<<ln.size<<std::endl;
+            //for(int i=0;i<ln.size;++i)
+                //std::cout<<ln.record[i].first<<' ';
+            //std::cout<<ln.record[0].first<<' '<<ln.record[ln.size-1].first;
+            //std::cout<<std::endl;
+//            int tmp=ln.succ;
+//            while(tmp!=0){
+//                read(&ln,tmp);
+//                std::cout<<"LeafNode size:"<<ln.size<<std::endl;
+//                for(int i=0;i<ln.size;++i)
+//                    std::cout<<ln.record[i].first<<' ';
+//
+//                //std::cout<<ln.record[0].first<<' '<<ln.record[ln.size-1].first;
+//                tmp=ln.succ;
+//                std::cout<<std::endl;
+//            }
+            for(int i=0;i<tn.size;++i){
+                LeafNode ln;
+                read(&ln,tn.index[i].second);
+                std::cout<<"TreeNode"<<i<<" size: "<<ln.size<<std::endl;
+                for(int k=0;k<ln.size;++k)
+                    std::cout<<ln.record[k].first<<' ';
                 std::cout<<std::endl;
             }
             return next;
