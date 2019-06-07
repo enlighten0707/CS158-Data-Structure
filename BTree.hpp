@@ -83,6 +83,87 @@ namespace sjtu {
         }
 
     public:
+        class const_iterator;
+        class iterator {
+        private:
+            // Your private members go here
+        public:
+            bool modify(const Value& value){
+
+            }
+            iterator() {
+                // TODO Default Constructor
+            }
+            iterator(const iterator& other) {
+                // TODO Copy Constructor
+            }
+            // Return a new iterator which points to the n-next elements
+            iterator operator++(int) {
+                // Todo iterator++
+            }
+            iterator& operator++() {
+                // Todo ++iterator
+            }
+            iterator operator--(int) {
+                // Todo iterator--
+            }
+            iterator& operator--() {
+                // Todo --iterator
+            }
+            // Overloaded of operator '==' and '!='
+            // Check whether the iterators are same
+            bool operator==(const iterator& rhs) const {
+                // Todo operator ==
+            }
+            bool operator==(const const_iterator& rhs) const {
+                // Todo operator ==
+            }
+            bool operator!=(const iterator& rhs) const {
+                // Todo operator !=
+            }
+            bool operator!=(const const_iterator& rhs) const {
+                // Todo operator !=
+            }
+        };
+        class const_iterator {
+            // it should has similar member method as iterator.
+            //  and it should be able to construct from an iterator.
+        private:
+            // Your private members go here
+        public:
+            const_iterator() {
+                // TODO
+            }
+            const_iterator(const const_iterator& other) {
+                // TODO
+            }
+            const_iterator(const iterator& other) {
+                // TODO
+            }
+            // And other methods in iterator, please fill by yourself.
+        };
+
+        BTree(const BTree& other) {
+            // Todo Copy
+        }
+        BTree& operator=(const BTree& other) {
+            // Todo Assignment
+        }
+        OperationResult erase(const Key& key) {
+            // TODO erase function
+            return Fail;  // If you can't finish erase part, just remaining here.
+        }
+        // Return a iterator to the beginning
+        iterator begin() {}
+        const_iterator cbegin() const {}
+        // Return a iterator to the end(the next element after the last)
+        iterator end() {}
+        const_iterator cend() const {}
+
+        void clear() {}
+        iterator find(const Key& key) {}
+        const_iterator find(const Key& key) const {}
+
         // Default Constructor and Copy Constructor
         BTree(const char *PATH = WRITE_PATH) {
             std::strcpy(path, PATH);
