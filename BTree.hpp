@@ -141,15 +141,15 @@ namespace sjtu {
 
             for(int i=0;i<core.height-2;++i){
                 int j=0;
-                while(j<tn.size&&comp(tn.index[j].key,key)) ++j;
+                while(j<tn.size&&comp(tn.index[j].first,key)) ++j;
                 if(j==tn.size) --j;
-                next=tn.index[j].child;
+                next=tn.index[j].second;
                 read(&tn,next);
             }
             int j=0;
-            while(j<tn.size&&comp(tn.index[j].key,key)) ++j;
+            while(j<tn.size&&comp(tn.index[j].first,key)) ++j;
             if(j==tn.size) --j;
-            next=tn.index[j].child;
+            next=tn.index[j].second;
             return next;
         }
 
@@ -161,7 +161,7 @@ namespace sjtu {
             read(&tn,offset);
             int i;
             for(i=0;i<tn.size;++i){
-                if(!comp(tn.index[i].key,oldKey)&&!comp(oldKey,tn.index[i].key))break;
+                if(!comp(tn.index[i].first,oldKey)&&!comp(oldKey,tn.index[i].first))break;
             }
             tn.index[i].first=newKey;
             write(&tn,offset);
@@ -257,7 +257,7 @@ namespace sjtu {
                 newNode.size+=L/2;
                 ln.size-=L/2;
                 upDateIndex(ln.parent,oldKey,ln.record[ln.size-1].first);
-                insertIndex(ln.parent,newNode.record[newNode.size-1].first,newNode.self,true);
+                insertIndex(ln.parent,oldKey,newNode.self,true);
                 write(&ln,ln.self);
                 write(&newNode,newNode.self);
                 insert(key,value);
@@ -328,7 +328,7 @@ namespace sjtu {
                 else{
                     //邻居满了，这时需要预处理，分裂当前节点
                     TreeNode newNode;
-                    createTreeNode(&tn, &newNode);
+                    createTreeNode(tn, newNode);
                     Key oldKey=tn.index[tn.size-1].first;
                     int i=M/2,j=0;
                     for(;i<M;++i,++j){
@@ -350,7 +350,7 @@ namespace sjtu {
             else{
                 //后面没有邻居,同样需要分裂
                 TreeNode newNode;
-                createTreeNode(&tn, &newNode);
+                createTreeNode(tn, newNode);
                 Key oldKey=tn.index[tn.size-1].first;
                 int i=M/2,j=0;
                 for(;i<M;++i,++j){
@@ -402,13 +402,13 @@ namespace sjtu {
                 LeafNode ln;
                 read(&ln,offset);
                 ln.parent=newParent;
-                write((&ln,offset));
+                write(&ln,offset);
             }
             else{
                 TreeNode tn;
                 read(&tn,offset);
                 tn.parent=newParent;
-                write((&tn,offset));
+                write(&tn,offset);
             }
         }
 
@@ -428,12 +428,13 @@ namespace sjtu {
         }
 
         Value at(const Key& key){
-            long pos = Find(key);
-            std::cout<<pos<<std::endl;
+            long leafPos=Find(key);
             LeafNode ln;
-            read(&ln, pos);
-            Record *rc = binarySearchRecord(ln, key);
-            return rc->value;
+            read(&ln,leafPos);
+            for(int i=0;i<ln.size;++i){
+                if(!comp(key,ln.record[i].first)&&!comp(ln.record[i].first,key))
+                    return ln.record[i].second;
+            }
         }
 
         bool empty() const { return core._size==0;}
