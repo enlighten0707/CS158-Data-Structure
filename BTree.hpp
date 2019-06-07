@@ -174,7 +174,26 @@ namespace sjtu {
         iterator end() {}
         const_iterator cend() const {}
 
-        void clear() {}
+        void clear() {
+            core.root = 0;
+            core.slot = 0;
+            core.pos = UNIT;
+            core._size = 0;
+            core.height = 0;
+            //openFile();
+            TreeNode rt;
+            alloc();
+            alloc();
+            core.root = alloc();
+            LeafNode ln;
+            ln.parent = core.root;
+            rt.index[0].second = alloc();
+            write(&rt, core.root);
+            write(&ln, rt.index[0].second);
+            core.height = 2;
+            write(&core, core.pos);
+            closeFile();
+        }
         iterator find(const Key& key) {}
         const_iterator find(const Key& key) const {}
 
@@ -578,6 +597,7 @@ namespace sjtu {
                         write(&newRoot,rootPos);
                         write(&tn,tn.self);
                         write(&newNode,newNode.self);
+                        write(&core,core.pos);
                         if(comp(key,tn.index[tn.size-1].first)){
                             insertIndex(tn.self,key,child,mode);
                             upDateParent(tn.self,child,mode);
@@ -644,6 +664,7 @@ namespace sjtu {
                     write(&newRoot,rootPos);
                     write(&tn,tn.self);
                     write(&newNode,newNode.self);
+                    write(&core,core.pos);
                     if(comp(key,tn.index[tn.size-1].first)){
                         insertIndex(tn.self,key,child,mode);
                         upDateParent(tn.self,child,mode);
