@@ -27,17 +27,17 @@ namespace sjtu {
 //        static const size_t L = 50;
 
         struct TreeNode{
-            long parent=0;
-            long self=0;
-            long succ=0;
+            off_t parent=0;
+            off_t self=0;
+            off_t succ=0;
             size_t size=0;
             Index index[M];
         };
 
         struct LeafNode{
-            long parent=0;
-            long self=0;
-            long succ=0;
+            off_t parent=0;
+            off_t self=0;
+            off_t succ=0;
             size_t size=0;
             Record record[L];
         };
@@ -47,9 +47,9 @@ namespace sjtu {
         //mutable int fileLevel = 0;
 
         struct CoreData{
-            long root = 0, slot = 0, pos = UNIT;
+            off_t root = 0, slot = 0, pos = UNIT;
             size_t _size = 0;
-            long height = 0;
+            off_t height = 0;
         };
 
         CoreData core;
@@ -71,7 +71,7 @@ namespace sjtu {
 //            //std::cout<<"close success\n";
 //        }
 //
-//        void write(void *place, long offset){
+//        void write(void *place, off_t offset){
 //            openFile();
 //            //std::rewind(fp);
 //            std::fseek(fp,offset,SEEK_SET);
@@ -81,7 +81,7 @@ namespace sjtu {
 //            closeFile();
 //        }
 //
-//        void read(void* place, long offset) {
+//        void read(void* place, off_t offset) {
 //            openFile();
 //            std::fseek(fp, offset, SEEK_SET);
 //            std::fread(place,UNIT,1, fp);
@@ -111,19 +111,19 @@ namespace sjtu {
             }
         }
 
-        inline void read(void *place, long offset) const {
+        inline void read(void *place, off_t offset) const {
             std::fseek(fp, offset, SEEK_SET);
             std::fread(place, UNIT, 1, fp);
         }
 
-        inline void write(void *place, long offset) const {
+        inline void write(void *place, off_t offset) const {
             std::fseek(fp, offset, SEEK_SET);
             std::fwrite(place, UNIT, 1, fp);
         }
 
-        long alloc(){
-            long s = core.slot;
-            core.slot += (long)UNIT;
+        off_t alloc(){
+            off_t s = core.slot;
+            core.slot += (off_t)UNIT;
             write(&core, core.pos);
             return s;
         }
@@ -302,13 +302,13 @@ namespace sjtu {
         // Return a pair, the first of the pair is the iterator point to the new
         // element, the second of the pair is Success if it is successfully inserted
 
-        long Find(const Key& key){
+        off_t Find(const Key& key){
             //找到插入key的叶结点的位置，如果插入的是最大或最小的key应当归并在中间
             //std::cout<<"Find Key:\n";
             TreeNode tn;
             read(&tn,core.root);
 
-            long next,parent=core.root;
+            off_t next,parent=core.root;
             if(core._size==0)
                 return tn.index[0].second;
 
@@ -343,7 +343,7 @@ namespace sjtu {
         }
 
         void insert(const Key& key, const Value& value){
-            long curPos=Find(key);
+            off_t curPos=Find(key);
 
             //std::cout<<curPos<<std::endl;
 
@@ -364,7 +364,7 @@ namespace sjtu {
                     write(&ln,curPos);
                 }
                 else{
-                    long i;
+                    off_t i;
                     for(i=ln.size;i>0;--i){
                         if(comp(ln.record[i-1].first,key))break;
                         ln.record[i]=ln.record[i-1];
@@ -732,7 +732,7 @@ namespace sjtu {
             }
 
         }
-        void upDateParent(long newParent,long offset,bool mode){
+        void upDateParent(off_t newParent,off_t offset,bool mode){
             //将孩子节点的父亲节点更新
             if(mode){
                 LeafNode ln;
@@ -793,7 +793,7 @@ namespace sjtu {
             }
         }
 
-        long debugFind(const Key& key){
+        off_t debugFind(const Key& key){
             //用于调试
             std::cout<<"height:"<<core.height<<std::endl;
             TreeNode tn;
