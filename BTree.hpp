@@ -123,7 +123,7 @@ namespace sjtu {
 
         off_t alloc(){
             off_t s = core.slot;
-            core.slot += (off_t)UNIT;
+            core.slot += UNIT;
             write(&core, core.pos);
             return s;
         }
@@ -783,14 +783,13 @@ namespace sjtu {
             std::cout<<"height:"<<core.height<<std::endl;
             TreeNode tn;
             read(&tn,core.root);
+
             std::cout<<"root size:"<<tn.size<<std::endl;
-            for(int i=0;i<tn.size;++i){
-                std::cout<<tn.index[i].first<<' ';
-                LeafNode ln;
-                read(&ln,tn.index[i].second);
-                std::cout<<ln.size<<'\t'<<ln.record[ln.size-1].first;
-                std::cout<<std::endl;
-            }
+            std::cout<<core.root<<std::endl;
+            std::cout<<core._size<<std::endl;
+            std::cout<<core.slot<<std::endl;
+            std::cout<<core.pos<<std::endl;
+            std::cout<<"***********************"<<std::endl;
         }
 
         off_t debugFind(const Key& key){
