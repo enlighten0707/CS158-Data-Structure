@@ -44,7 +44,7 @@ namespace sjtu {
 
         char path[1024];
         mutable FILE *fp = nullptr;
-        mutable int fileLevel = 0;
+        //mutable int fileLevel = 0;
 
         struct CoreData{
             long root = 0, slot = 0, pos = UNIT;
@@ -54,45 +54,77 @@ namespace sjtu {
 
         CoreData core;
         Compare comp;
+        bool fp_open;
 
-        void openFile(const char *mode = "rb+") const{
-            if (fileLevel == 0)
-                fp = std::fopen(path, mode);
-            ++fileLevel;
-            //std::cout<<"open success\n";
+
+//        void openFile(const char *mode = "rb+") const{
+//            if (fileLevel == 0)
+//                fp = std::fopen(path, mode);
+//            ++fileLevel;
+//            //std::cout<<"open success\n";
+//        }
+
+//        void closeFile() const{
+//            if (fileLevel == 1)
+//                std::fclose(fp);
+//            --fileLevel;
+//            //std::cout<<"close success\n";
+//        }
+//
+//        void write(void *place, long offset){
+//            openFile();
+//            //std::rewind(fp);
+//            std::fseek(fp,offset,SEEK_SET);
+//            std::fwrite(place,UNIT,1,fp);
+//            std::fflush(fp);
+//
+//            closeFile();
+//        }
+//
+//        void read(void* place, long offset) {
+//            openFile();
+//            std::fseek(fp, offset, SEEK_SET);
+//            std::fread(place,UNIT,1, fp);
+//            closeFile();
+//        }
+
+        bool file_already_exists;
+
+        inline void openFile() {
+            file_already_exists = 1;
+            if (fp_open == 0) {
+                fp = fopen(path, "rb+");
+                if (fp == nullptr) {
+                    file_already_exists = 0;
+                    fp = std::fopen(path, "w");
+                    std::fclose(fp);
+                    fp = std::fopen(path, "rb+");
+                } else read(&core, core.pos);
+                fp_open = 1;
+            }
         }
 
-        void closeFile() const{
-            if (fileLevel == 1)
+        inline void closeFile() {
+            if (fp_open == 1) {
                 std::fclose(fp);
-            --fileLevel;
-            //std::cout<<"close success\n";
+                fp_open = 0;
+            }
         }
 
-        void write(void *place, long offset){
-            //openFile();
-            //std::rewind(fp);
-            std::fseek(fp,offset,SEEK_SET);
-            std::fwrite(place,UNIT,1,fp);
-            std::fflush(fp);
-
-            //closeFile();
-        }
-
-        void read(void* place, long offset) {
-            //openFile();
+        inline void read(void *place, long offset) const {
             std::fseek(fp, offset, SEEK_SET);
-            std::fread(place,UNIT,1, fp);
-            //closeFile();
+            std::fread(place, UNIT, 1, fp);
         }
 
+        inline void write(void *place, long offset) const {
+            std::fseek(fp, offset, SEEK_SET);
+            std::fwrite(place, UNIT, 1, fp);
+        }
 
         long alloc(){
-            //std::cout<<"#alloc:";
             long s = core.slot;
             core.slot += (long)UNIT;
             write(&core, core.pos);
-            //std::cout<<s<<' '<<core.slot<<' '<<core.pos<<std::endl;
             return s;
         }
 
@@ -200,11 +232,30 @@ namespace sjtu {
         // Default Constructor and Copy Constructor
         BTree(const char *PATH = WRITE_PATH) {
             std::strcpy(path, PATH);
-            if (access(path, 0) == -1){
-                FILE *tmpfp = std::fopen(path, "wb+");
-                fclose(tmpfp);
-            }
+//            if (access(path, 0) == -1){
+//                FILE *tmpfp = std::fopen(path, "wb+");
+//                fclose(tmpfp);
+//            }
+//            openFile();
+//            TreeNode rt;
+//            alloc();
+//            alloc();
+//            core.root = alloc();
+//            LeafNode ln;
+//            ln.parent = core.root;
+//            rt.index[0].second = alloc();
+//            ln.self=rt.index[0].second;
+//            rt.self=core.root;
+//            write(&rt, core.root);
+//            write(&ln, rt.index[0].second);
+//            core.height = 2;
+//            write(&core, core.pos);
+            fp = nullptr;
             openFile();
+            if (file_already_exists == 0) build_tree();
+        }
+
+        inline void build_tree() {
             TreeNode rt;
             alloc();
             alloc();
@@ -216,34 +267,33 @@ namespace sjtu {
             rt.self=core.root;
             write(&rt, core.root);
             write(&ln, rt.index[0].second);
-//            TreeNode newNode;
-//            read(&newNode,core.root);
-//            std::cout<<"###"<<newNode.self<<std::endl;
             core.height = 2;
             write(&core, core.pos);
-            //std::cout<<"M="<<M<<"  L="<<L<<std::endl;
+
         }
+
+
 
         ~BTree() {
             //openFile("wb+");
             //closeFile();
-            core.root = 0;
-            core.slot = 0;
-            core.pos = UNIT;
-            core._size = 0;
-            core.height = 0;
-            //openFile();
-            TreeNode rt;
-            alloc();
-            alloc();
-            core.root = alloc();
-            LeafNode ln;
-            ln.parent = core.root;
-            rt.index[0].second = alloc();
-            write(&rt, core.root);
-            write(&ln, rt.index[0].second);
-            core.height = 2;
-            write(&core, core.pos);
+//            core.root = 0;
+//            core.slot = 0;
+//            core.pos = UNIT;
+//            core._size = 0;
+//            core.height = 0;
+//            //openFile();
+//            TreeNode rt;
+//            alloc();
+//            alloc();
+//            core.root = alloc();
+//            LeafNode ln;
+//            ln.parent = core.root;
+//            rt.index[0].second = alloc();
+//            write(&rt, core.root);
+//            write(&ln, rt.index[0].second);
+//            core.height = 2;
+//            write(&core, core.pos);
             closeFile();
         }
 
@@ -743,7 +793,7 @@ namespace sjtu {
             }
         }
 
-        /*void debugFind(){
+        long debugFind(const Key& key){
             //用于调试
             std::cout<<"height:"<<core.height<<std::endl;
             TreeNode tn;
@@ -756,6 +806,9 @@ namespace sjtu {
                 for(int k=0;k<tn.size;++k)
                     std::cout<<tn.index[k].first<<' ';
                 std::cout<<std::endl;
+                int j=0;
+                while(j<tn.size&&comp(tn.index[j].first,key)) ++j;
+                if(j==tn.size) --j;
                 next=tn.index[j].second;
                 read(&tn,next);
             }
@@ -784,7 +837,7 @@ namespace sjtu {
                 std::cout<<std::endl;
             }
             return next;
-        }*/
+        }
 
     };
 }  // namespace sjtu
