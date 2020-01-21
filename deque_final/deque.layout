@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_layout_file>
+	<ActiveTarget name="Debug" />
+	<File name="class-bint.h" open="1" top="0" tabpos="6">
+		<Cursor position="14477" topLine="472" />
+	</File>
+	<File name="class-integer.h" open="1" top="0" tabpos="5">
+		<Cursor position="271" topLine="0" />
+	</File>
+	<File name="class-matrix.h" open="1" top="0" tabpos="4">
+		<Cursor position="8085" topLine="243" />
+	</File>
+	<File name="deque.h" open="1" top="0" tabpos="1">
+		<Cursor position="32225" topLine="881" />
+	</File>
+	<File name="exceptions.h" open="1" top="0" tabpos="3">
+		<Cursor position="879" topLine="29" />
+	</File>
+	<File name="main.cpp" open="1" top="0" tabpos="2">
+		<Cursor position="13887" topLine="454" />
+	</File>
+</CodeBlocks_layout_file>
